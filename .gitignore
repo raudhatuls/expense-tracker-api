@@ -1,0 +1,5 @@
+expensetracker/
+__pycache__/
+*.pyc
+user.json
+.env
