@@ -4,6 +4,7 @@ import json
 import datetime
 from datetime import date
 from operator import itemgetter
+from fastapi import FastAPI, HTTPException
 
 app = FastAPI()
 
@@ -52,12 +53,35 @@ async def list_expense(item_category: str | None = None):
                         new_data[:] = [d for d in data if d.get('category') == item_category]
                         return new_data
                     else:
-                        return {"message" : "No expense have been recorded for given category"}
+                        raise HTTPException(status_code=404, detail="No expense have been recorded for given category")
                 else :
                     return data
             else :
-                return {"message" : "No expense recorded"}
+                raise HTTPException(status_code=404, detail="No expense recorded")
     except FileNotFoundError:
-        return {"message" : "No expense recorded"}
+        raise HTTPException(status_code=404, detail="No expense recorded")
+    
+@app.delete("/delete_expense/{expense_id}")
+async def delete_expense(expense_id: int):
+    new_data=[]
+    data=[]
+    try :
+        with open('user.json', 'r+', encoding='utf-8') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="No expense recorded")
+    except Exception as e:
+        return {"message": f"Error: {e}"}
+         
+    if expense_id in map(itemgetter('id'), data):
+        new_data[:] = [d for d in data if d.get('id') != expense_id]
+        try :
+            with open("user.json", "w") as file:
+                json.dump(new_data, file, default=str)
+            return {"message" : "Expense have been deleted"}
+        except Exception as e: 
+            return {"message": f"Error: {e}"}
+    else :
+        raise HTTPException(status_code=404, detail="The id you entered is not in the list")    
     
     
