@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import json
 import datetime
 from datetime import date
+from operator import itemgetter
 
 app = FastAPI()
 
@@ -12,7 +13,7 @@ class Expense(BaseModel):
     description: str
     transaction_date : datetime.date
 
-@app.post("/items/")
+@app.post("/add_expense/")
 async def add_expense(item: Expense):
     item_dict = item.model_dump()
     data_existed = []
@@ -36,3 +37,27 @@ async def add_expense(item: Expense):
     except Exception as e: 
         print(e)
     return item_dict
+
+
+@app.get("/list_expense/")
+async def list_expense(item_category: str | None = None):
+    data = []
+    new_data = []
+    try :
+        with open('user.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            if data:
+                if item_category is not None:
+                    if item_category in map(itemgetter('category'), data):
+                        new_data[:] = [d for d in data if d.get('category') == item_category]
+                        return new_data
+                    else:
+                        return {"message" : "No expense have been recorded for given category"}
+                else :
+                    return data
+            else :
+                return {"message" : "No expense recorded"}
+    except FileNotFoundError:
+        return {"message" : "No expense recorded"}
+    
+    
